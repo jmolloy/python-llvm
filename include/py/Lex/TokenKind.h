@@ -18,8 +18,9 @@ namespace py {
 namespace tok {
 
 enum TokenKind {
-#define TOK(X) X
-#include "py/Lex/TokenKind.def"
+#define TOK(X) X,
+#include "py/Lex/TokenKinds.def"
+end
 };
 
 }

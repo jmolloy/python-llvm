@@ -276,4 +276,3 @@ endif()
 set(BUG_REPORT_URL "http://jamesmolloy.co.uk/bugs/" CACHE STRING
   "Default URL where bug reports are to be submitted.")
 
-message(FATAL_ERROR "Here")

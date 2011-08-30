@@ -35,14 +35,14 @@
 
 TOK(unknown)             // Not a token.
 TOK(eof)                 // End of file.
-TOK(eod)                 // End of preprocessing directive (end of line inside a
-                         // directive).
-
-TOK(comment)             // Comment (only in -E -C[C] mode)
 
 TOK(identifier)          // abcde123
 TOK(numeric_constant)    // 0x123
-TOK(string_literal)      // "foo"
+TOK(string_constant)      // "foo"
+TOK(newline)
+
+TOK(indent)
+TOK(dedent)
 
 // C99 6.4.6: Punctuators.
 PUNCTUATOR(l_square,            "[")

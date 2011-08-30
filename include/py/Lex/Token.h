@@ -21,24 +21,42 @@ namespace py {
 
 class Token {
 public:
-    unsigned getLength() {
-        return Length;
-    }
-    void setLength(unsigned len) {
-        Length = len;
-    }
-    llvm::SMLoc getLocation() {
-        return Loc;
-    }
-    void setLocation(llvm::SMLoc loc) {
-        Loc = loc;
-    }
-    tok::TokenKind getKind() {
-        return Kind;
-    }
-    void setKind(tok::TokenKind kind) {
-        Kind = kind;
-    }
+  unsigned getLength() {
+    return Length;
+  }
+  void setLength(unsigned len) {
+    Length = len;
+  }
+  llvm::SMLoc getLocation() {
+    return Loc;
+  }
+  void setLocation(llvm::SMLoc loc) {
+    Loc = loc;
+  }
+  tok::TokenKind getKind() {
+    return Kind;
+  }
+  void setKind(tok::TokenKind kind) {
+    Kind = kind;
+  }
+  char *getContent() {
+    return Content;
+  }
+  void setContent(char *c) {
+    Content = c;
+  }
+  void setContent(const char *c) {
+    Content = const_cast<char*>(c);
+  }
+  std::string getString() {
+    return std::string(Content, Length);
+  }
+
+private:
+  unsigned Length;
+  llvm::SMLoc Loc;
+  tok::TokenKind Kind;
+  char *Content;
 };
 
 }
