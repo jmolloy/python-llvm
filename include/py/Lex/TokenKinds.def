@@ -94,7 +94,6 @@ PUNCTUATOR(hash,                "#")
 
 PUNCTUATOR(at,                  "@")
 
-// C99 6.4.1: Keywords.  These turn into kw_* tokens.
 KEYWORD(and                         , KEYALL)
 KEYWORD(as                          , KEYALL)
 KEYWORD(assert                      , KEYALL)

@@ -282,12 +282,297 @@ bool Lexer::LexPossibleIndent(Token &Result, unsigned indent, bool *error) {
 }
 
 bool Lexer::LexIdentifier(Token &Result) {
-  // Match [_A-Za-z0-9]*, we have already matched [_A-Za-z$]
-  char C = getAscii();
+  // Match [_A-Za-z0-9]*, we have already matched [_A-Za-z$]        
+  char C;
   while (isIdentifierBody(C = getAscii()))
     ;
 
   unget(); // Back up over the last character.
+
+  // Recognise special identifiers.
+  const char *T = TokStart;
+  unsigned L = Ptr-TokStart;
+
+  // Early exit - no identifiers are 1 char long.
+  if (L == 1) {
+    MakeToken(Result, tok::identifier);
+    return true;
+   }
+
+  switch (*T++) {
+  case 'a':
+    if (L < 2) break;
+    switch (*T++) {
+    case 'n':
+      if (L == 3 && *T++ == 'd') {
+        MakeToken(Result, tok::kw_and);
+        return true;
+      }
+      break;
+    case 's':
+      if (L == 2) {
+        MakeToken(Result, tok::kw_as);
+        return true;
+      }
+      if (*T++ == 's' &&
+          !strncmp(T, "ert", 3) &&
+          L == 6) {
+        MakeToken(Result, tok::kw_assert);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+
+  case 'b':
+    if (L == 5 &&
+        !strncmp(T, "reak", 4)) {
+      MakeToken(Result, tok::kw_break);
+      return true;
+    }
+    break;
+
+  case 'c':
+    if (L < 5) break;
+    switch (*T++) {
+    case 'l':
+      if (L == 5 && 
+          !strncmp(T, "ass", 3)) {
+        MakeToken(Result, tok::kw_class);
+        return true;
+      }
+      break;
+    case 'o':
+      if (L == 8 &&
+          !strncmp(T, "ntinue", 6)) {
+        MakeToken(Result, tok::kw_continue);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+
+  case 'd':
+    if (*T++ != 'e' || L != 3)
+      break;
+    switch (*T++) {
+    case 'f':
+      MakeToken(Result, tok::kw_def);
+      return true;
+    case 'l':
+      MakeToken(Result, tok::kw_del);
+      return true;
+    default:
+      break;
+    }
+    break;
+  
+  case 'e':
+    if (L < 4) break;
+    switch (*T++) {
+    case 'l':
+      if (L != 4) break;
+      switch (*T++) {
+      case 'i':
+        if (*T++ == 'f') {
+          MakeToken(Result, tok::kw_elif);
+          return true;
+        }
+        break;
+      case 's':
+        if (*T++ == 'e') {
+          MakeToken(Result, tok::kw_else);
+          return true;
+        }
+        break;
+      default:
+        break;
+      }
+      break;
+    case 'x':
+      if (L == 4 && *T++ == 'e' && 
+          *T++ == 'c') {
+        MakeToken(Result, tok::kw_exec);
+        return true;
+      }
+      if (L == 6 && !strncmp(T, "cept", 4)) {
+        MakeToken(Result, tok::kw_except);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+
+  case 'f':
+    if (L < 3) break;
+    switch (*T++) {
+    case 'i':
+      if (L == 7 && !strncmp(T, "nally", 5)) {
+        MakeToken(Result, tok::kw_finally);
+        return true;
+      }
+      break;
+    case 'o':
+      if (L == 3 && *T == 'r') {
+        MakeToken(Result, tok::kw_for);
+        return true;
+      }
+      break;
+    case 'r':
+      if (L == 4 && *T++ == 'o' &&
+          *T == 'm') {
+        MakeToken(Result, tok::kw_from);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+
+  case 'g':
+    if (L == 6 && !strncmp(T, "lobal", 5)) {
+      MakeToken(Result, tok::kw_global);
+      return true;
+    }
+    break;
+
+  case 'i':
+    switch (*T++) {
+    case 'f':
+      if (L == 2) {
+        MakeToken(Result, tok::kw_if);
+        return true;
+      }
+      break;
+    case 'm':
+      if (L == 6 && !strncmp(T, "port", 4)) {
+        MakeToken(Result, tok::kw_import);
+        return true;
+      }
+      break;
+    case 'n':
+      if (L == 2) {
+        MakeToken(Result, tok::kw_in);
+        return true;
+      }
+      break;
+    case 's':
+      if (L == 2) {
+        MakeToken(Result, tok::kw_is);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+
+  case 'l':
+    if (L == 6 && !strncmp(T, "ambda", 5)) {
+      MakeToken(Result, tok::kw_lambda);
+      return true;
+    }
+    break;
+
+  case 'n':
+    if (L == 3 && *T++ == 'o' && *T == 't') {
+      MakeToken(Result, tok::kw_not);
+      return true;
+    }
+    break;
+
+  case 'o':
+    if (L == 2 && *T == 'r') {
+      MakeToken(Result, tok::kw_or);
+      return true;
+    }
+    break;
+
+  case 'p':
+    if (L < 4) break;
+    switch (*T++) {
+    case 'a':
+      if (L == 4 && !strncmp(T, "ss", 2)) {
+        MakeToken(Result, tok::kw_pass);
+        return true;
+      }
+      break;
+    case 'r':
+      // FIXME: Check LangFeatures
+      if (L == 5 && !strncmp(T, "int", 3)) {
+        MakeToken(Result, tok::kw_print);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+
+  case 'r':
+    if (L < 5) break;
+    switch (*T++) {
+    case 'a':
+      if (L == 5 && !strncmp(T, "ise", 3)) {
+        MakeToken(Result, tok::kw_raise);
+        return true;
+      }
+      break;
+    case 'e':
+      if (L == 6 && !strncmp(T, "turn", 4)) {
+        MakeToken(Result, tok::kw_return);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+
+  case 't':
+    if (L == 3 && *T++ == 'r' && *T == 'y') {
+      MakeToken(Result, tok::kw_try);
+      return true;
+    }
+    break;
+
+  case 'w':
+    if (L < 4) break;
+    switch (*T++) {
+    case 'h':
+      if (L == 5 && !strncmp(T, "ile", 3)) {
+        MakeToken(Result, tok::kw_while);
+        return true;
+      }
+      break;
+    case 'i':
+      // FIXME: Check LangFeatures
+      if (L == 4 && *T++ == 't' && *T == 'h') {
+        MakeToken(Result, tok::kw_with);
+        return true;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+
+  case 'y':
+    if (L == 5 && !strncmp(T, "ield", 4)) {
+      MakeToken(Result, tok::kw_yield);
+      return true;
+    }
+    break;
+
+  default:
+    break;
+  }
 
   MakeToken(Result, tok::identifier);
   return true;
@@ -435,13 +720,20 @@ bool Lexer::Lex(Token &Result) {
 
     case '"':
     case '\'':
-      AtLineStart = false;
+      INITIAL_INDENT();
       if ((peekAscii(0) == '"' && peekAscii(1) == '"') ||
           (peekAscii(1) == '\'' && peekAscii(1) == '\'')) {
         getAscii(); getAscii();
         return LexFatStringConstant(Result, Char);
       }
       return LexStringConstant(Result, Char);
+
+    case 'a': case 'e': case 'i': case 'm': case 'q': case 'u': case 'y':
+    case 'b': case 'f': case 'j': case 'n': case 'r': case 'v': case 'z':
+    case 'c': case 'g': case 'k': case 'o': case 's': case 'w':
+    case 'd': case 'h': case 'l': case 'p': case 't': case 'x':
+      INITIAL_INDENT();
+      return LexIdentifier(Result);
 
     default:
       assert(0 && "Unhandled character!");

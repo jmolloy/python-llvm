@@ -69,6 +69,39 @@ int main(int argc, char **argv)  {
     case tok::newline: Out->os() << "Newline\n"; continue;
     case tok::indent: Out->os() << "Indent\n"; continue;
     case tok::dedent: Out->os() << "Dedent\n"; continue;
+
+    case tok::kw_and: Out->os() << "And\n"; continue;
+    case tok::kw_as: Out->os() << "As\n"; continue;
+    case tok::kw_assert: Out->os() << "Assert\n"; continue;
+    case tok::kw_break: Out->os() << "Break\n"; continue;
+    case tok::kw_class: Out->os() << "Class\n"; continue;
+    case tok::kw_continue: Out->os() << "Continue\n"; continue;
+    case tok::kw_def: Out->os() << "Def\n"; continue;
+    case tok::kw_del: Out->os() << "Del\n"; continue;
+    case tok::kw_elif: Out->os() << "Elif\n"; continue;
+    case tok::kw_else: Out->os() << "Else\n"; continue;
+    case tok::kw_except: Out->os() << "Except\n"; continue;
+    case tok::kw_exec: Out->os() << "Exec\n"; continue;
+    case tok::kw_finally: Out->os() << "Finally\n"; continue;
+    case tok::kw_for: Out->os() << "For\n"; continue;
+    case tok::kw_from: Out->os() << "From\n"; continue;
+    case tok::kw_global: Out->os() << "Global\n"; continue;
+    case tok::kw_if: Out->os() << "If\n"; continue;
+    case tok::kw_import: Out->os() << "Import\n"; continue;
+    case tok::kw_in: Out->os() << "In\n"; continue;
+    case tok::kw_is: Out->os() << "Is\n"; continue;
+    case tok::kw_lambda: Out->os() << "Lambda\n"; continue;
+    case tok::kw_not: Out->os() << "Not\n"; continue;
+    case tok::kw_or: Out->os() << "Or\n"; continue;
+    case tok::kw_pass: Out->os() << "Pass\n"; continue;
+    case tok::kw_print: Out->os() << "Print\n"; continue;
+    case tok::kw_raise: Out->os() << "Raise\n"; continue;
+    case tok::kw_return: Out->os() << "Return\n"; continue;
+    case tok::kw_try: Out->os() << "Try\n"; continue;
+    case tok::kw_while: Out->os() << "While\n"; continue;
+    case tok::kw_with: Out->os() << "With\n"; continue;
+    case tok::kw_yield: Out->os() << "Yield\n"; continue;
+
     default: Out->os() << "UnhandledToken"; break;
     }
     
