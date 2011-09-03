@@ -23,6 +23,8 @@
 
 /// Maximum extent of the indent stack.
 #define INDENT_STACK_MAX 256
+/// Maximum extent of the brace stack.
+#define BRACE_STACK_MAX 256
 /// The width a tab should have in spaces.
 #define TAB_WIDTH 8
 
@@ -52,6 +54,9 @@ class Lexer {
 
   unsigned IndentStack[INDENT_STACK_MAX];
   signed IndentStackTop;
+
+  unsigned BraceStack[BRACE_STACK_MAX];
+  signed BraceStackTop;
 
   unsigned NumDedents;
 
@@ -93,7 +98,7 @@ private:
   unsigned getUnicode();
   void unget();
 
-  char peekAscii(unsigned Lookahead);
+  char peekAscii(unsigned Lookahead=0);
 
   void Diag(const char *str, Diagnostic::Severity s);
 

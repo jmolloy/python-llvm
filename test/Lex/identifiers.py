@@ -77,3 +77,8 @@ ife
 ifelse
 # CHECK: Identifier<try_>
 try_
+
+Hello
+# CHECK: Identifier<Hello>
+True
+# CHECK: Identifier<True>

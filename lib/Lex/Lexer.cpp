@@ -38,6 +38,17 @@ static void InitCharacterInfo();
   }                                                             \
   AtLineStart = false;                                          \
 
+#define BRACE_STACK_PUSH(X)                     \
+  BraceStack[BraceStackTop++] = X;              \
+  assert(BraceStackTop < BRACE_STACK_MAX && "Brace stack overflow!");
+
+#define BRACE_STACK_POP(X)                              \
+  if (BraceStackTop == 0 ||                             \
+      BraceStack[--BraceStackTop] != X) {               \
+    Diag("Mismatched parentheses", Diagnostic::Error);  \
+    return false;                                       \
+  }                                                     \
+
 
 /// Lexer constructor - Create a new lexer object for the specified buffer
 /// with the specified preprocessor managing the lexing process.  This lexer
@@ -46,6 +57,7 @@ static void InitCharacterInfo();
 Lexer::Lexer(const MemoryBuffer *InputBuffer, LangFeatures features) :
   Buffer(InputBuffer), TokStart(0), Ptr(0),
   Features(features), AtLineStart(true), IndentStackTop(0),
+  BraceStackTop(0),
   NumDedents(0), LastCharLen(0) {
   InitCharacterInfo();
 
@@ -673,6 +685,14 @@ bool Lexer::Lex(Token &Result) {
     case '\0':
       // EOF?
       if (Ptr >= Buffer->getBufferEnd()) {
+        // Do we have unterminated indents that we need to emit a
+        // dedent for?
+        if (IndentStackTop > 0) {
+          NumDedents = IndentStackTop;
+          IndentStackTop = 0;
+          Ptr = TokStart; // Reset back so we see the \0 again next time.
+          return Lex(Result);
+        }
         Result.setKind(tok::eof);
         return true;
       }
@@ -685,7 +705,9 @@ bool Lexer::Lex(Token &Result) {
         AtLineStart = false;
         // Whitespace significant at beginning of line.
         int indent = CountWhitespace(Char);
-        if (LexPossibleIndent(Result, indent, &error))
+        // Purely blank lines don't count.
+        if (peekAscii() != '\r' && peekAscii() != '\n' && 
+            LexPossibleIndent(Result, indent, &error))
           return true;
         if (error) return false;
         // Fall through - insignificant whitespace.
@@ -699,7 +721,7 @@ bool Lexer::Lex(Token &Result) {
       // as start-of-line whitespace is significant.
       while (*Ptr == '\n' || *Ptr == '\r')
         ++Ptr;
-      AtLineStart = true;
+      AtLineStart = BraceStackTop==0;
       return true;
 
     case '0': case '1': case '2': case '3': case '4':
@@ -714,7 +736,7 @@ bool Lexer::Lex(Token &Result) {
         I = getUnicode();
       while (*Ptr == '\n' || *Ptr == '\r')
         ++Ptr;
-      AtLineStart = true;
+      AtLineStart = BraceStackTop==0;
       continue;
     }
 
@@ -722,7 +744,7 @@ bool Lexer::Lex(Token &Result) {
     case '\'':
       INITIAL_INDENT();
       if ((peekAscii(0) == '"' && peekAscii(1) == '"') ||
-          (peekAscii(1) == '\'' && peekAscii(1) == '\'')) {
+          (peekAscii(0) == '\'' && peekAscii(1) == '\'')) {
         getAscii(); getAscii();
         return LexFatStringConstant(Result, Char);
       }
@@ -732,8 +754,223 @@ bool Lexer::Lex(Token &Result) {
     case 'b': case 'f': case 'j': case 'n': case 'r': case 'v': case 'z':
     case 'c': case 'g': case 'k': case 'o': case 's': case 'w':
     case 'd': case 'h': case 'l': case 'p': case 't': case 'x':
+    case 'A': case 'E': case 'I': case 'M': case 'Q': case 'U': case 'Y':
+    case 'B': case 'F': case 'J': case 'N': case 'R': case 'V': case 'Z':
+    case 'C': case 'G': case 'K': case 'O': case 'S': case 'W':
+    case 'D': case 'H': case 'L': case 'P': case 'T': case 'X':
+    case '_':
       INITIAL_INDENT();
       return LexIdentifier(Result);
+
+    case '\\':
+      if (getAscii() != '\n') {
+        Diag("Spurious characters after line joining backslash", Diagnostic::Warning);
+        while (getAscii() != '\n')
+          ;
+        return false;
+      }
+      continue;
+
+    case '(':
+      INITIAL_INDENT();
+      BRACE_STACK_PUSH('(');
+      MakeToken(Result, tok::l_paren);
+      return true;
+    case '[':
+      INITIAL_INDENT();
+      BRACE_STACK_PUSH('[');
+      MakeToken(Result, tok::l_square);
+      return true;
+    case '{':
+      INITIAL_INDENT();
+      BRACE_STACK_PUSH('{');
+      MakeToken(Result, tok::l_brace);
+      return true;
+
+    case ')':
+      INITIAL_INDENT();
+      BRACE_STACK_POP('(');
+      MakeToken(Result, tok::r_paren);
+      return true;
+    case ']':
+      INITIAL_INDENT();
+      BRACE_STACK_POP('[');
+      MakeToken(Result, tok::r_square);
+      return true;
+    case '}':
+      INITIAL_INDENT();
+      BRACE_STACK_POP('{');
+      MakeToken(Result, tok::r_brace);
+      return true;
+    
+    case '.':
+      INITIAL_INDENT();
+      if (peekAscii() == '.') {
+        getAscii();
+        if (getAscii() != '.') {
+          Diag("Syntax error", Diagnostic::Error);
+          return false;
+        }
+        MakeToken(Result, tok::ellipsis);
+        return true;
+      }
+      MakeToken(Result, tok::period);
+      return true;
+
+    case '&':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::ampequal);
+        return true;
+      }
+      MakeToken(Result, tok::amp);
+      return true;
+
+    case '*':
+      if (peekAscii() == '*') {
+        getAscii();
+        MakeToken(Result, tok::starstar);
+        return true;
+      } else if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::starequal);
+        return true;
+      }
+      MakeToken(Result, tok::star);
+      return true;
+
+    case '+':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::plusequal);
+        return true;
+      }
+      MakeToken(Result, tok::plus);
+      return true;
+
+    case '-':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::minusequal);
+        return true;
+      }
+      MakeToken(Result, tok::minus);
+      return true;
+      
+    case '~':
+      MakeToken(Result, tok::tilde);
+      return true;
+
+    case '/':
+      if (peekAscii() == '/') {
+        getAscii();
+        MakeToken(Result, tok::slashslash);
+        return true;
+      } else if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::slashequal);
+        return true;
+      }
+      MakeToken(Result, tok::slash);
+      return true;
+
+    case '%':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::percentequal);
+        return true;
+      }
+      MakeToken(Result, tok::percent);
+      return true;
+
+    case '<':
+      if (peekAscii() == '<') {
+        getAscii();
+        if (peekAscii() == '=') {
+          getAscii();
+          MakeToken(Result, tok::lesslessequal);
+          return true;
+        }
+        MakeToken(Result, tok::lessless);
+        return true;
+      }
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::lessequal);
+        return true;
+      }
+      MakeToken(Result, tok::less);
+      return true;
+
+    case '>':
+      if (peekAscii() == '>') {
+        getAscii();
+        if (peekAscii() == '=') {
+          getAscii();
+          MakeToken(Result, tok::greatergreaterequal);
+          return true;
+        }
+        MakeToken(Result, tok::greatergreater);
+        return true;
+      }
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::greaterequal);
+        return true;
+      }
+      MakeToken(Result, tok::greater);
+      return true;
+
+    case '^':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::caretequal);
+        return true;
+      }
+      MakeToken(Result, tok::caret);
+      return true;
+
+    case '|':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::pipeequal);
+        return true;
+      }
+      MakeToken(Result, tok::pipe);
+      return true;
+
+    case ':':
+      MakeToken(Result, tok::colon);
+      return true;
+
+    case ';':
+      MakeToken(Result, tok::semi);
+      return true;
+
+    case '=':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::equalequal);
+        return true;
+      }
+      MakeToken(Result, tok::equal);
+      return true;
+
+    case ',':
+      MakeToken(Result, tok::comma);
+      return true;
+
+    case '@':
+      MakeToken(Result, tok::at);
+      return true;
+
+    case '!':
+      if (peekAscii() == '=') {
+        getAscii();
+        MakeToken(Result, tok::bangequal);
+        return true;
+      }
+      // Fall through;
 
     default:
       assert(0 && "Unhandled character!");

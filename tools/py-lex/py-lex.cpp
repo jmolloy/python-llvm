@@ -8,7 +8,7 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/ToolOutputFile.h"
-
+#include <iostream>
 using namespace llvm;
 using namespace py;
 
@@ -37,7 +37,9 @@ static tool_output_file *GetOutputStream() {
 
 int main(int argc, char **argv)  {
   char *ProgName = argv[0];
-
+  cl::ParseCommandLineOptions(argc, argv,
+                              "python lexing playground");
+  
   OwningPtr<MemoryBuffer> BufferPtr;
   if (error_code ec = MemoryBuffer::getFileOrSTDIN(InputFilename, BufferPtr)) {
     errs() << ProgName << ": " << ec.message() << '\n';
@@ -102,6 +104,50 @@ int main(int argc, char **argv)  {
     case tok::kw_with: Out->os() << "With\n"; continue;
     case tok::kw_yield: Out->os() << "Yield\n"; continue;
 
+    case tok::l_square: Out->os() << "[\n"; continue;
+    case tok::r_square: Out->os() << "]\n"; continue;
+    case tok::l_paren: Out->os() << "(\n"; continue;
+    case tok::r_paren: Out->os() << ")\n"; continue;
+    case tok::l_brace: Out->os() << "{\n"; continue;
+    case tok::r_brace: Out->os() << "}\n"; continue;
+
+    case tok::period: Out->os() << ".\n"; continue;
+    case tok::ellipsis: Out->os() << "...\n"; continue;
+    case tok::amp: Out->os() << "&\n"; continue;
+    case tok::ampequal: Out->os() << "&=\n"; continue;
+    case tok::star: Out->os() << "*\n"; continue;
+    case tok::starstar: Out->os() << "**\n"; continue;
+    case tok::starequal: Out->os() << "*=\n"; continue;
+    case tok::plus: Out->os() << "+\n"; continue;
+    case tok::plusequal: Out->os() << "+=\n"; continue;
+    case tok::minus: Out->os() << "-\n"; continue;
+    case tok::minusequal: Out->os() << "-=\n"; continue;
+    case tok::tilde: Out->os() << "~\n"; continue;
+    case tok::slash: Out->os() << "/\n"; continue;
+    case tok::slashslash: Out->os() << "//\n"; continue;
+    case tok::slashequal: Out->os() << "/=\n"; continue;
+    case tok::percent: Out->os() << "%\n"; continue;
+    case tok::percentequal: Out->os() << "%=\n"; continue;
+    case tok::less: Out->os() << "<\n"; continue;
+    case tok::lessless: Out->os() << "<<\n"; continue;
+    case tok::lessequal: Out->os() << "<=\n"; continue;
+    case tok::lesslessequal: Out->os() << "<<=\n"; continue;
+    case tok::greater: Out->os() << ">\n"; continue;
+    case tok::greaterequal: Out->os() << ">=\n"; continue;
+    case tok::greatergreater: Out->os() << ">>\n"; continue;
+    case tok::greatergreaterequal: Out->os() << ">>=\n"; continue;
+    case tok::caret: Out->os() << "^\n"; continue;
+    case tok::caretequal: Out->os() << "^=\n"; continue;
+    case tok::pipe: Out->os() << "|\n"; continue;
+    case tok::pipeequal: Out->os() << "|=\n"; continue;
+    case tok::colon: Out->os() << ":\n"; continue;
+    case tok::semi: Out->os() << ";\n"; continue;
+    case tok::equal: Out->os() << "=\n"; continue;
+    case tok::equalequal: Out->os() << "==\n"; continue;
+    case tok::comma: Out->os() << ",\n"; continue;
+    case tok::at: Out->os() << "@\n"; continue;
+    case tok::bangequal: Out->os() << "!=\n"; continue;
+
     default: Out->os() << "UnhandledToken"; break;
     }
     
@@ -113,6 +159,7 @@ int main(int argc, char **argv)  {
          end = lex.getDiagnostics().end();
        it != end;
        ++it) {
+    std::cerr << "About to print message: " << it->getMessage() << std::endl;
     SrcMgr.PrintMessage(it->getLoc(), it->getMessage(), it->getSeverityAsText());
   }
 

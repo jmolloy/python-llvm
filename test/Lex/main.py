@@ -34,3 +34,9 @@
 # CHECK: Dedent
 # CHECK: Dedent
 # CHECK: Number<5>
+
+0 \
+  2
+# CHECK: Number<0>
+# CHECK-NOT: Newline
+# CHECK: Number<2>
