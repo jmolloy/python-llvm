@@ -58,7 +58,8 @@ Lexer::Lexer(const MemoryBuffer *InputBuffer, LangFeatures features) :
   Buffer(InputBuffer), TokStart(0), Ptr(0),
   Features(features), AtLineStart(true), IndentStackTop(0),
   BraceStackTop(0),
-  NumDedents(0), LastCharLen(0) {
+  NumDedents(0), LastCharLen(0),
+  PeekTokenSuccess(false), PeekTokenValid(false) {
   InitCharacterInfo();
 
   IndentStack[IndentStackTop] = 0;
@@ -668,8 +669,25 @@ bool Lexer::LexFatStringConstant(Token &Result, char Delimiter) {
 // Main lexer entry point.
 //===----------------------------------------------------------------------===//
 
+bool Lexer::Peek(Token &Result) {
+  if (PeekTokenValid) {
+    Result = PeekToken;
+    return PeekTokenSuccess;
+  }
+
+  PeekTokenSuccess = Lex(PeekToken);
+  Result = PeekToken;
+  PeekTokenValid = true;
+  return PeekTokenSuccess;
+}
 
 bool Lexer::Lex(Token &Result) {
+  if (PeekTokenValid) {
+    Result = PeekToken;
+    PeekTokenValid = false;
+    return PeekTokenSuccess;
+  }
+
   if (NumDedents) {
     MakeToken(Result, tok::dedent);
     --NumDedents;
@@ -721,8 +739,14 @@ bool Lexer::Lex(Token &Result) {
       // as start-of-line whitespace is significant.
       while (*Ptr == '\n' || *Ptr == '\r')
         ++Ptr;
-      AtLineStart = BraceStackTop==0;
-      return true;
+      // Only emit a NEWLINE token if we're not in a brace.
+      if (BraceStackTop == 0) {
+        AtLineStart = true;
+        return true;
+      } else {
+        // Next token
+        continue;
+      }
 
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
@@ -743,6 +767,7 @@ bool Lexer::Lex(Token &Result) {
     case '"':
     case '\'':
       INITIAL_INDENT();
+string_case:
       if ((peekAscii(0) == '"' && peekAscii(1) == '"') ||
           (peekAscii(0) == '\'' && peekAscii(1) == '\'')) {
         getAscii(); getAscii();
@@ -750,17 +775,41 @@ bool Lexer::Lex(Token &Result) {
       }
       return LexStringConstant(Result, Char);
 
-    case 'a': case 'e': case 'i': case 'm': case 'q': case 'u': case 'y':
-    case 'b': case 'f': case 'j': case 'n': case 'r': case 'v': case 'z':
+    case 'a': case 'e': case 'i': case 'm': case 'q':           case 'y':
+              case 'f': case 'j': case 'n':           case 'v': case 'z':
     case 'c': case 'g': case 'k': case 'o': case 's': case 'w':
     case 'd': case 'h': case 'l': case 'p': case 't': case 'x':
-    case 'A': case 'E': case 'I': case 'M': case 'Q': case 'U': case 'Y':
-    case 'B': case 'F': case 'J': case 'N': case 'R': case 'V': case 'Z':
+    case 'A': case 'E': case 'I': case 'M': case 'Q':           case 'Y':
+              case 'F': case 'J': case 'N':           case 'V': case 'Z':
     case 'C': case 'G': case 'K': case 'O': case 'S': case 'W':
     case 'D': case 'H': case 'L': case 'P': case 'T': case 'X':
     case '_':
       INITIAL_INDENT();
       return LexIdentifier(Result);
+
+    case 'b': case 'B':
+    case 'u': case 'U':
+    case 'r': case 'R':
+      // Could be an identifier or a string literal.
+      INITIAL_INDENT();
+      switch (peekAscii()) {
+      case '"':
+      case '\'':
+        Char = getAscii();
+        goto string_case;
+
+      case 'b': case 'B':
+      case 'u': case 'U':
+      case 'r': case 'R':
+        if (peekAscii(1) == '\'' || peekAscii(1) == '"') {
+          getAscii();
+          Char = getAscii();
+          goto string_case;
+        }
+        // Fall through
+      default:
+        return LexIdentifier(Result);
+      }
 
     case '\\':
       if (getAscii() != '\n') {
@@ -962,6 +1011,10 @@ bool Lexer::Lex(Token &Result) {
 
     case '@':
       MakeToken(Result, tok::at);
+      return true;
+
+    case '`':
+      MakeToken(Result, tok::backtick);
       return true;
 
     case '!':

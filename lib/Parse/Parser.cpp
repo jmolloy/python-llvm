@@ -1,4 +1,4 @@
-//===--- Parser.cpp - C Language Family Parser ----------------------------===//
+//===--- Parser.cpp - Python Parser ---------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -21,14 +21,16 @@
 using namespace py;
 using namespace llvm;
 
-
 #define LEX(T) do {                             \
     if (!L.Lex(T) && AreLexerErrors())          \
       return PNode();                           \
+    if (T.getKind() == tok::eof)                \
+      return PNode();                           \
   } while(0)
 
-Parser::Parser(Lexer &L) :
-  L(L) {
+Parser::Parser(Lexer &L, LLVMContext &C, Module &M,
+               llvm::raw_ostream &DS) :
+  L(L), Context(C), Mod(M), DebugStream(DS) {
 }
 
 bool Parser::AreLexerErrors() {
@@ -62,15 +64,14 @@ bool Parser::ParseRule(std::string Rule) {
     .Case("eval_input", 2)
     .Case("compound_stmt", 3)
     .Case("simple_stmt", 4)
+    .Case("atom", 999)
+    .Case("STRING", 1000)
     .Default(-1);
 
   switch (I) {
-  case 0:
-    return ParseFileInput();
-  case 1:
-    return ParseSingleInput();
-  case 2:
-    return ParseEvalInput();
+  case 0: return ParseFileInput();
+  case 1: return ParseSingleInput();
+  case 2: return ParseEvalInput();
   default:
     break;
   }
@@ -78,10 +79,10 @@ bool Parser::ParseRule(std::string Rule) {
   Token T;
   LEX(T);
   switch (I) {
-  case 3:
-    return ParseCompoundStmt(T);
-  case 4:
-    return ParseSimpleStmt(T);
+  case 3: return ParseCompoundStmt(T);
+  case 4: return ParseSimpleStmt(T);
+  case 999: return ParseAtom(T);
+  case 1000: return ParseOneString(T);
   default:
     assert(0 && "Unhandled case!");
   }
@@ -129,10 +130,10 @@ Parser::PNode Parser::ParseStmt(Token &T) {
 
 Parser::PNode Parser::ParseCompoundStmt(Token &T) {
   std::cerr << "Compound\n";
-  return T;
+  return PNode();
 }
 
 Parser::PNode Parser::ParseSimpleStmt(Token &T) {
   std::cerr << "Simple\n";
-  return T;
+  return PNode();
 }

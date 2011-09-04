@@ -62,6 +62,10 @@ class Lexer {
 
   unsigned LastCharLen;
 
+  Token PeekToken;
+  bool PeekTokenSuccess;
+  bool PeekTokenValid;
+
   Lexer(const Lexer&);          // DO NOT IMPLEMENT
   void operator=(const Lexer&); // DO NOT IMPLEMENT
 
@@ -78,6 +82,10 @@ public:
   /// return the tok::eof token.  Return false if an error occurred and
   /// compilation should terminate, true if normal.
   bool Lex(Token &Result);
+
+  /// Peek - Like "Lex" but will reset the starting token so that the same token will be returned by a later call to Lex.
+  /// Peek is safe to call multiple times between Lex calls.
+  bool Peek(Token &Result);
 
   llvm::SmallVector<Diagnostic, 5> &getDiagnostics() {
     return Diagnostics;

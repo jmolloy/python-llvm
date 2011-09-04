@@ -24,3 +24,15 @@ newlines'''
 
 ""
 # CHECK: String<\"\">
+
+u"x"
+# CHECK: String<u\"x\">
+
+uR'x'
+# CHECK: String<uR'x'>
+
+br''
+# CHECK: String<br''>
+
+ru'g'
+# CHECK: String<ru'g'>

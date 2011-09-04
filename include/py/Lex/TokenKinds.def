@@ -86,6 +86,7 @@ PUNCTUATOR(equal,               "=")
 PUNCTUATOR(equalequal,          "==")
 PUNCTUATOR(comma,               ",")
 PUNCTUATOR(bangequal,           "!=")
+PUNCTUATOR(backtick,            "`")
 
 PUNCTUATOR(at,                  "@")
 

@@ -147,6 +147,7 @@ int main(int argc, char **argv)  {
     case tok::comma: Out->os() << ",\n"; continue;
     case tok::at: Out->os() << "@\n"; continue;
     case tok::bangequal: Out->os() << "!=\n"; continue;
+    case tok::backtick: Out->os() << "`\n"; continue;
 
     default: Out->os() << "UnhandledToken"; break;
     }

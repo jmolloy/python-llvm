@@ -4,6 +4,9 @@ set(LLVM_USED_LIBS )
 
 add_python_library(pyParse
   Parser.cpp
+  Atoms.cpp
+  Support.cpp
+  TreePrinter.cpp
   )
 
 #add_dependencies(clangLex )

@@ -9,6 +9,8 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include "llvm/LLVMContext.h"
+#include "llvm/Module.h"
 #include <iostream>
 using namespace llvm;
 using namespace py;
@@ -23,6 +25,10 @@ OutputFilename("o", cl::desc("Output filename"),
 static cl::opt<std::string>
 Rule("rule", cl::desc("Starting grammar rule"),
      cl::value_desc("rule"));
+
+static cl::opt<bool>
+PrintTree("print-tree", cl::desc("Print out the AST?"),
+          cl::value_desc("print-tree"));
 
 static tool_output_file *GetOutputStream() {
   if (OutputFilename == "")
@@ -63,12 +69,20 @@ int main(int argc, char **argv)  {
 
   LangFeatures features;
   
-  Lexer lex(Buffer, features);
-  Parser P(lex);
+  LLVMContext C;
+  Module M("py-parse playpen", C);
 
-  bool Result;
+  Lexer lex(Buffer, features);
+  Parser P(lex, C, M, PrintTree ? errs() : nulls());
+
+  bool Result = true;
   if (Rule.length()) {
-    Result = P.ParseRule(Rule);
+    Token T;
+    while (Result) {
+      while (lex.Peek(T) && T.getKind() == tok::newline)
+        lex.Lex(T);
+      Result = P.ParseRule(Rule);
+    }
   } else {
     Result = P.ParseFile();
   }
@@ -79,6 +93,14 @@ int main(int argc, char **argv)  {
        ++it) {
     SrcMgr.PrintMessage(it->getLoc(), it->getMessage(), it->getSeverityAsText());
   }
+  for (SmallVector<Diagnostic, 5>::iterator it = P.getDiagnostics().begin(),
+         end = P.getDiagnostics().end();
+       it != end;
+       ++it) {
+    SrcMgr.PrintMessage(it->getLoc(), it->getMessage(), it->getSeverityAsText());
+  }
+
+  errs().flush();
 
   return Result ? 1 : 0;
 }
