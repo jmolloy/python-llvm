@@ -16,6 +16,8 @@
 #include "py/Parse/Parser.h"
 #include "py/Diagnostic.h"
 #include "llvm/ADT/StringSwitch.h"
+#include "llvm/BasicBlock.h"
+#include "llvm/Type.h"
 #include <iostream>
 
 using namespace py;
@@ -76,12 +78,18 @@ bool Parser::ParseRule(std::string Rule) {
     break;
   }
 
+  Function *F = cast<Function>(
+    Mod.getOrInsertFunction("parse-rule",
+                            Type::getVoidTy(Context),
+                            NULL));
+  BasicBlock *BB = &F->getEntryBlock();
+  
   Token T;
   LEX(T);
   switch (I) {
   case 3: return ParseCompoundStmt(T);
   case 4: return ParseSimpleStmt(T);
-  case 999: return ParseAtom(T);
+  case 999: return ParseAtom(T, &BB);
   case 1000: return ParseOneString(T);
   default:
     assert(0 && "Unhandled case!");

@@ -32,16 +32,16 @@ using namespace llvm;
 //        '{' [dictorsetmaker] '}' |
 //        '`' testlist1 '`' |
 //        NAME | NUMBER | STRING+)
-Parser::PNode Parser::ParseAtom(Token &T) {
+Parser::PNode Parser::ParseAtom(Token &T, BasicBlock **BB) {
   switch (T.getKind()) {
   case tok::l_paren:
-    return ParseYieldExprOrTestlistComp(T);
+    return ParseYieldExprOrTestlistComp(T, BB);
   case tok::l_square:
-    return ParseListMaker(T);
+    return ParseListMaker(T, BB);
   case tok::l_brace:
-    return ParseDictOrSetMaker(T);
+    return ParseDictOrSetMaker(T, BB);
   case tok::backtick:
-    return ParseTestlist1(T);
+    return ParseTestlist1(T, BB);
   case tok::identifier:
     return ParseName(T);
   case tok::numeric_constant:
@@ -56,22 +56,22 @@ Parser::PNode Parser::ParseAtom(Token &T) {
 
 
 // FIXME
-Parser::PNode Parser::ParseYieldExprOrTestlistComp(Token &T) {
+Parser::PNode Parser::ParseYieldExprOrTestlistComp(Token &T, BasicBlock **BB) {
   assert(0);
 }
 
 // FIXME
-Parser::PNode Parser::ParseListMaker(Token &T) {
+Parser::PNode Parser::ParseListMaker(Token &T, BasicBlock **BB) {
   assert(0);
 }
 
 // FIXME
-Parser::PNode Parser::ParseDictOrSetMaker(Token &T) {
+Parser::PNode Parser::ParseDictOrSetMaker(Token &T, BasicBlock **BB) {
   assert(0);
 }
 
 // FIXME
-Parser::PNode Parser::ParseTestlist1(Token &T) {
+Parser::PNode Parser::ParseTestlist1(Token &T, BasicBlock **BB) {
   assert(0);
 }
 

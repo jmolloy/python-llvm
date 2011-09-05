@@ -26,6 +26,7 @@ namespace llvm {
   class StringRef;
   class Twine;
   class raw_ostream;
+  class BasicBlock;
 }
 
 namespace py {
@@ -100,11 +101,11 @@ private:
   PNode ParseCompoundStmt(Token &T);
   PNode ParseSimpleStmt(Token &T);
 
-  PNode ParseAtom(Token &T);
-  PNode ParseYieldExprOrTestlistComp(Token &T);
-  PNode ParseListMaker(Token &T);
-  PNode ParseDictOrSetMaker(Token &T);
-  PNode ParseTestlist1(Token &T);
+  PNode ParseAtom(Token &T, llvm::BasicBlock **BB);
+  PNode ParseYieldExprOrTestlistComp(Token &T, llvm::BasicBlock **BB);
+  PNode ParseListMaker(Token &T, llvm::BasicBlock **BB);
+  PNode ParseDictOrSetMaker(Token &T, llvm::BasicBlock **BB);
+  PNode ParseTestlist1(Token &T, llvm::BasicBlock **BB);
   PNode ParseName(Token &T);
   PNode ParseNumber(Token &T);
   PNode ParseOneOrMoreStrings(Token &T);
@@ -124,7 +125,7 @@ private:
   llvm::StringRef SanitizeString(llvm::StringRef S);
   
   /// Returns a ConstantArray initialized to T.
-  llvm:: Constant *GetConstantString(const llvm::Twine &T);
+  llvm::Constant *GetConstantString(const llvm::Twine &T);
 
 };
 
