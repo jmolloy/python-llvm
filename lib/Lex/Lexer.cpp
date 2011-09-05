@@ -867,6 +867,7 @@ string_case:
       return true;
 
     case '&':
+      INITIAL_INDENT();
       if (peekAscii() == '=') {
         getAscii();
         MakeToken(Result, tok::ampequal);
@@ -876,6 +877,7 @@ string_case:
       return true;
 
     case '*':
+      INITIAL_INDENT();
       if (peekAscii() == '*') {
         getAscii();
         MakeToken(Result, tok::starstar);
@@ -889,28 +891,48 @@ string_case:
       return true;
 
     case '+':
-      if (peekAscii() == '=') {
+      INITIAL_INDENT();
+      switch(peekAscii()) {
+      case '=':
         getAscii();
         MakeToken(Result, tok::plusequal);
         return true;
+      case '0': case '1': case '2': case '3':
+      case '4': case '5': case '6': case '7':
+      case '8': case '9':
+        getAscii();
+        return LexNumericConstant(Result);
+      default:
+        break;
       }
       MakeToken(Result, tok::plus);
       return true;
 
     case '-':
-      if (peekAscii() == '=') {
+      INITIAL_INDENT();
+      switch(peekAscii()) {
+      case '=':
         getAscii();
         MakeToken(Result, tok::minusequal);
         return true;
+      case '0': case '1': case '2': case '3':
+      case '4': case '5': case '6': case '7':
+      case '8': case '9':
+        getAscii();
+        return LexNumericConstant(Result);
+      default:
+        break;
       }
       MakeToken(Result, tok::minus);
       return true;
       
     case '~':
+      INITIAL_INDENT();
       MakeToken(Result, tok::tilde);
       return true;
 
     case '/':
+      INITIAL_INDENT();
       if (peekAscii() == '/') {
         getAscii();
         MakeToken(Result, tok::slashslash);
@@ -924,6 +946,7 @@ string_case:
       return true;
 
     case '%':
+      INITIAL_INDENT();
       if (peekAscii() == '=') {
         getAscii();
         MakeToken(Result, tok::percentequal);
@@ -933,6 +956,7 @@ string_case:
       return true;
 
     case '<':
+      INITIAL_INDENT();
       if (peekAscii() == '<') {
         getAscii();
         if (peekAscii() == '=') {
@@ -952,6 +976,7 @@ string_case:
       return true;
 
     case '>':
+      INITIAL_INDENT();
       if (peekAscii() == '>') {
         getAscii();
         if (peekAscii() == '=') {
@@ -971,6 +996,7 @@ string_case:
       return true;
 
     case '^':
+      INITIAL_INDENT();
       if (peekAscii() == '=') {
         getAscii();
         MakeToken(Result, tok::caretequal);
@@ -980,6 +1006,7 @@ string_case:
       return true;
 
     case '|':
+      INITIAL_INDENT();
       if (peekAscii() == '=') {
         getAscii();
         MakeToken(Result, tok::pipeequal);
@@ -989,14 +1016,17 @@ string_case:
       return true;
 
     case ':':
+      INITIAL_INDENT();
       MakeToken(Result, tok::colon);
       return true;
 
     case ';':
+      INITIAL_INDENT();
       MakeToken(Result, tok::semi);
       return true;
 
     case '=':
+      INITIAL_INDENT();
       if (peekAscii() == '=') {
         getAscii();
         MakeToken(Result, tok::equalequal);
@@ -1006,18 +1036,22 @@ string_case:
       return true;
 
     case ',':
+      INITIAL_INDENT();
       MakeToken(Result, tok::comma);
       return true;
 
     case '@':
+      INITIAL_INDENT();
       MakeToken(Result, tok::at);
       return true;
 
     case '`':
+      INITIAL_INDENT();
       MakeToken(Result, tok::backtick);
       return true;
 
     case '!':
+      INITIAL_INDENT();
       if (peekAscii() == '=') {
         getAscii();
         MakeToken(Result, tok::bangequal);

@@ -21,6 +21,9 @@
 
 #include "Name.h"
 
+#include <errno.h>
+#include <stdlib.h>
+
 using namespace py;
 using namespace llvm;
 
@@ -72,15 +75,41 @@ Parser::PNode Parser::ParseTestlist1(Token &T) {
   assert(0);
 }
 
-// FIXME
+// NAME
 Parser::PNode Parser::ParseName(Token &T) {
   DebugStream << "(name \"" << T.getString() << "\")";
   return PNode(T, new Name(Context, T.getString()));
 }
 
-// FIXME
+// NUMBER
 Parser::PNode Parser::ParseNumber(Token &T) {
-  assert(0);
+  // FIXME: I'm not sure this implements the Python number specification *exactly*...
+
+  const char *S = T.getString().c_str();
+  char *EndPtr = 0;
+  errno = 0;
+  long long int L = strtoll(S, &EndPtr, 0);
+
+  if (errno || *EndPtr != '\0') {
+    EndPtr = 0;
+    errno = 0;
+    long double D = strtod(S, &EndPtr);
+
+    if (errno || *EndPtr != '\0') {
+      Diag(T, "Bad number format", Diagnostic::Error);
+      return PNode(T);
+    }
+  
+    DebugStream << "(number " << (double)D << ")";
+    return PNode(T, ConstantFP::get(Type::getDoubleTy(Context), D));
+  }
+
+  DebugStream << "(number " << L << ")";
+  
+  if (L < 1LL<<32)
+    return PNode(T, ConstantInt::get(Type::getInt32Ty(Context), L));
+  else
+    return PNode(T, ConstantInt::get(Type::getInt64Ty(Context), L));
 }
 
 // STRING+

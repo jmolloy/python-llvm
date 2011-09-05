@@ -30,6 +30,8 @@ static cl::opt<bool>
 PrintTree("print-tree", cl::desc("Print out the AST?"),
           cl::value_desc("print-tree"));
 
+static void EmitDiagnostics(Lexer &lex, Parser &P, SourceMgr &SrcMgr);
+
 static tool_output_file *GetOutputStream() {
   if (OutputFilename == "")
     OutputFilename = "-";
@@ -78,15 +80,23 @@ int main(int argc, char **argv)  {
   bool Result = true;
   if (Rule.length()) {
     Token T;
-    while (Result) {
+    while (lex.Peek(T) && T.getKind() != tok::eof) {
       while (lex.Peek(T) && T.getKind() == tok::newline)
         lex.Lex(T);
+      if (T.getKind() == tok::eof) break;
       Result = P.ParseRule(Rule);
+      EmitDiagnostics(lex, P, SrcMgr);
     }
   } else {
     Result = P.ParseFile();
   }
 
+  errs().flush();
+
+  return Result ? 1 : 0;
+}
+
+static void EmitDiagnostics(Lexer &lex, Parser &P, SourceMgr &SrcMgr) {
   for (SmallVector<Diagnostic, 5>::iterator it = lex.getDiagnostics().begin(),
          end = lex.getDiagnostics().end();
        it != end;
@@ -99,8 +109,7 @@ int main(int argc, char **argv)  {
        ++it) {
     SrcMgr.PrintMessage(it->getLoc(), it->getMessage(), it->getSeverityAsText());
   }
-
-  errs().flush();
-
-  return Result ? 1 : 0;
+  lex.getDiagnostics().clear();
+  P.getDiagnostics().clear();
 }
+

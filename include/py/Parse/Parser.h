@@ -55,7 +55,7 @@ class Parser {
   /// between parse calls.
   class PNode {
   public:
-    PNode(Token &FirstTok, llvm::Value *V) :
+    PNode(Token &FirstTok, llvm::Value *V=0) :
       Loc(FirstTok.getLocation()),
       V(V) {
     }

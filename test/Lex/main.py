@@ -4,11 +4,15 @@
 0x123
 456e-3
 43.5f
+-42
++42
 
 # CHECK: Number<789>
 # CHECK: Number<0x123>
 # CHECK: Number<456e-3>
 # CHECK: Number<43.5f>
+# CHECK: Number<-42>
+# CHECK: Number<+42>
 
   0
     1
