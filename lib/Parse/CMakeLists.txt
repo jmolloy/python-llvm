@@ -6,6 +6,7 @@ add_python_library(pyParse
   Parser.cpp
   Atoms.cpp
   Support.cpp
+  Exprs.cpp
   TreePrinter.cpp
   )
 

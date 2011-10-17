@@ -1,6 +1,7 @@
 set(LLVM_USED_LIBS
   pyLex
   pyParse
+  pyRuntime
   )
 
 set( LLVM_LINK_COMPONENTS

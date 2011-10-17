@@ -1,7 +1,7 @@
 # RUN: %py-parse -rule atom -print-tree %s 2>&1 | FileCheck %s
 
-1.0f
-# CHECK: error: Bad number format
+#1.0f
+# CHECK-: error: Bad number format
 
 0x5gf
 # CHECK: error: Bad number format

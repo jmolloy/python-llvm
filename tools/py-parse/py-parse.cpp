@@ -1,5 +1,6 @@
 #include "py/Lex/Lexer.h"
 #include "py/Parse/Parser.h"
+#include "py/Runtime/Runtime.h"
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/CommandLine.h"
@@ -29,6 +30,10 @@ Rule("rule", cl::desc("Starting grammar rule"),
 static cl::opt<bool>
 PrintTree("print-tree", cl::desc("Print out the AST?"),
           cl::value_desc("print-tree"));
+
+static cl::opt<bool>
+PrintModule("print-module", cl::desc("Print out the generated Module?"),
+            cl::value_desc("print-module"));
 
 static void EmitDiagnostics(Lexer &lex, Parser &P, SourceMgr &SrcMgr);
 
@@ -75,7 +80,8 @@ int main(int argc, char **argv)  {
   Module M("py-parse playpen", C);
 
   Lexer lex(Buffer, features);
-  Parser P(lex, C, M, PrintTree ? errs() : nulls());
+  Runtime R(C);
+  Parser P(lex, R, C, M, PrintTree ? errs() : nulls());
 
   bool Result = true;
   if (Rule.length()) {
@@ -84,14 +90,22 @@ int main(int argc, char **argv)  {
       while (lex.Peek(T) && T.getKind() == tok::newline)
         lex.Lex(T);
       if (T.getKind() == tok::eof) break;
-      Result = P.ParseRule(Rule);
+
+      lex.Lex(T);
+      Result = P.ParseRule(Rule, T);
       EmitDiagnostics(lex, P, SrcMgr);
+//      if (!Result) {
+// /       lex.Lex(T);
+//      }
     }
   } else {
     Result = P.ParseFile();
   }
 
   errs().flush();
+
+  if (PrintModule)
+    M.dump();
 
   return Result ? 1 : 0;
 }

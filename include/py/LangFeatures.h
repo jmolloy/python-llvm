@@ -28,6 +28,7 @@ class LangFeatures {
       AllowWith = 1<<2UL,           ///< 'with' clauses are allowed.
       AllowImportAs = 1<<3UL,       ///< 'import ... as ...' is allowed.
       AllowExceptAs = 1<<4UL,       ///< 'except ... as ...' is allowed.
+      AllowSetComp = 1<<5UL,        ///< set comprehensions are allowed.
       FeaturesEnd
     };
 

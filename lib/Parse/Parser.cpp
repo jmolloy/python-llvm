@@ -16,8 +16,10 @@
 #include "py/Parse/Parser.h"
 #include "py/Diagnostic.h"
 #include "llvm/ADT/StringSwitch.h"
+#include "llvm/ADT/Twine.h"
 #include "llvm/BasicBlock.h"
 #include "llvm/Type.h"
+#include "llvm/DerivedTypes.h"
 #include <iostream>
 
 using namespace py;
@@ -30,9 +32,9 @@ using namespace llvm;
       return PNode();                           \
   } while(0)
 
-Parser::Parser(Lexer &L, LLVMContext &C, Module &M,
+Parser::Parser(Lexer &L, Runtime &R, LLVMContext &C, Module &M,
                llvm::raw_ostream &DS) :
-  L(L), Context(C), Mod(M), DebugStream(DS) {
+  L(L), R(R), Context(C), Mod(M), DebugStream(DS) {
 }
 
 bool Parser::AreLexerErrors() {
@@ -59,7 +61,7 @@ bool Parser::ParseEvalInput() {
   assert(0 && "Unimplemented!");
 }
 
-bool Parser::ParseRule(std::string Rule) {
+bool Parser::ParseRule(std::string Rule, Token &T) {
   int I = llvm::StringSwitch<int>(Rule)
     .Case("file_input", 0)
     .Case("single_input", 1)
@@ -77,15 +79,24 @@ bool Parser::ParseRule(std::string Rule) {
   default:
     break;
   }
-
-  Function *F = cast<Function>(
-    Mod.getOrInsertFunction("parse-rule",
-                            Type::getVoidTy(Context),
-                            NULL));
-  BasicBlock *BB = &F->getEntryBlock();
   
-  Token T;
-  LEX(T);
+  Twine Tw = "parse-rule0";
+  Twine Base = "parse-rule";
+  int Idx = 0;
+  while (Mod.getFunction(StringRef(Tw.str()))) {
+    Tw = Base + Twine(++Idx);
+  }
+
+  assert(!Mod.getFunction(StringRef(Tw.str())) && "Function 'parse-rule' redefined!");
+
+  Function *F = Function::Create(FunctionType::get(
+                                   Type::getVoidTy(Context), false),
+                                 GlobalValue::ExternalLinkage,
+                                 StringRef(Tw.str()),
+                                 &Mod);
+  assert(F);
+  BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+  
   switch (I) {
   case 3: return ParseCompoundStmt(T);
   case 4: return ParseSimpleStmt(T);

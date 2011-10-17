@@ -27,17 +27,23 @@ namespace llvm {
   class Twine;
   class raw_ostream;
   class BasicBlock;
+  class Value;
 }
 
 namespace py {
 
 class Lexer;
+class Runtime;
+class GroupBlock;
 
 /// Parser - This takes a Lexer and produces LLVM bitcode from it,
 /// with calls to Python intrinsics for complex behaviour.
 class Parser {
   /// The Lexer this Parser reads from.
   Lexer &L;
+
+  /// Runtime to use.
+  Runtime &R;
 
   /// LLVMContext to create all constants in.
   llvm::LLVMContext &Context;
@@ -78,7 +84,7 @@ public:
   /// Constructor - creates a new Parser, given a Lexer to pull
   /// tokens from, a Context and Module to populate, and a 
   /// stream to write debug info to (can be nulls()).
-  Parser(Lexer &L, llvm::LLVMContext &C, llvm::Module &M,
+  Parser(Lexer &L, Runtime &R, llvm::LLVMContext &C, llvm::Module &M,
          llvm::raw_ostream &DS);
 
   /// Main parse routine - lexes tokens until EOF. Continues
@@ -88,8 +94,8 @@ public:
   bool ParseEvalInput();
   
   /// Secondary parse routine, for testing. Parses, but starts
-  /// at a particular rule.
-  bool ParseRule(std::string Rule);
+  /// at a particular rule (and takes a token input);
+  bool ParseRule(std::string Rule, Token &T);
 
   llvm::SmallVector<Diagnostic, 5> &getDiagnostics() {
     return Diagnostics;
@@ -110,6 +116,29 @@ private:
   PNode ParseNumber(Token &T);
   PNode ParseOneOrMoreStrings(Token &T);
   PNode ParseOneString(Token &T);
+
+  PNode ParseCompFor(Token &T, llvm::BasicBlock **BB, GroupBlock Kernel);
+  llvm::BasicBlock *
+  ParseCompFor_WrapKernel(GroupBlock Kernel, llvm::Value *IndVar,
+                                llvm::Value *Container, llvm::BasicBlock *Exit);
+  
+  PNode ParseTest(Token &T, llvm::BasicBlock **BB);
+  PNode ParseTestlist(Token &T, llvm::BasicBlock **BB, PNode N);
+  PNode ParseYieldExpr(Token &T, llvm::BasicBlock **BB);
+  PNode ParseExprList(Token &T, llvm::BasicBlock **BB);
+  PNode ParseOrTest(Token &T, llvm::BasicBlock **BB);
+
+  llvm::BasicBlock *ConcatBlocks(llvm::BasicBlock *BB1,
+                                 llvm::BasicBlock *BB2);
+  llvm::BasicBlock *ConcatBlocks(llvm::BasicBlock *BB1,
+                                 GroupBlock GB2);
+  llvm::BasicBlock *ConcatBlocks(GroupBlock GB1,
+                                 llvm::BasicBlock *BB2);
+  llvm::BasicBlock *ConcatBlocks(GroupBlock GB1,
+                                 GroupBlock GB2);
+
+  llvm::Value *MakeTuple(const std::vector<PNode> &List,
+                         llvm::BasicBlock **BB);
 
   /// Emits a diagnostic to the diagnostics list.
   void Diag(Token &T, const char *str, Diagnostic::Severity s);

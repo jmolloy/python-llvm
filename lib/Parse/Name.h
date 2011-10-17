@@ -22,7 +22,12 @@ using namespace llvm;
 namespace py {
 
 /// Pretend as if we have a place in the ValueTy enum.
-const unsigned NameVal = ~0U;
+/// This is specifically chosen as Value::dump() is hardcoded
+/// to different Value* types. We choose a known Value type
+/// that uses a custom virtual function for printing.
+///
+/// @see VMCore/AsmWriter.cpp:2053
+const unsigned NameVal = llvm::Value::PseudoSourceValueVal;
 
 /// This class is a placeholder for a name that is yet to be
 /// resolved.
@@ -35,10 +40,12 @@ const unsigned NameVal = ~0U;
 /// or AllocaInst and run replaceAllUsesWith().
 class Name : public Value {
 public:
-  Name(LLVMContext &C, StringRef N) :
-    Value(IntegerType::get(C, 8), NameVal), N(N) {
+  Name(Runtime &R, StringRef N) :
+    Value(R.GetObjectTyPtr(), NameVal), N(N) {
   }
-  
+  virtual ~Name() {
+  }
+
   StringRef GetName() const {return N;}
 
   static bool classof(const Value *V) {
@@ -48,9 +55,13 @@ public:
     return N->getValueID() == NameVal;
   }
 
+  virtual void printCustom(raw_ostream &OS) const {
+    OS << "$" << N;
+  }
+
 private:
   /// Name, as a string.
-  StringRef N;
+  std::string N;
 };
 
 }

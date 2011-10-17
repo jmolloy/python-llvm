@@ -16,7 +16,10 @@
 #include "py/Diagnostic.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/Support/IRBuilder.h"
 #include "llvm/Constants.h"
+
+#include "GroupBlock.h"
 
 using namespace py;
 using namespace llvm;
@@ -155,4 +158,43 @@ StringRef Parser::SanitizeString(StringRef S) {
 
 Constant *Parser::GetConstantString(const Twine &T) {
   return ConstantArray::get(Context, T.str());
+}
+
+llvm::Value *Parser::MakeTuple(const std::vector<PNode> &List,
+                               BasicBlock **BB) {
+  assert(0);
+  return NULL;
+}
+
+BasicBlock *Parser::ConcatBlocks(BasicBlock *BB1, BasicBlock *BB2) {
+  assert(!BB1->getTerminator() && "Asked to concatenate a block that is already terminated!");
+  IRBuilder<> IRB(BB1);
+  IRB.CreateBr(BB2);
+  return BB2;
+}
+
+BasicBlock *Parser::ConcatBlocks(BasicBlock *BB1, GroupBlock GB2) {
+  assert(!BB1->getTerminator() && "Asked to concatenate a block that is already terminated!");
+  IRBuilder<> IRB(BB1);
+  IRB.CreateBr(GB2.First());
+  return GB2.Last();
+}
+
+BasicBlock *Parser::ConcatBlocks(GroupBlock GB1, BasicBlock *BB2) {
+  assert(GB1.Last() &&
+         !GB1.Last()->getTerminator() &&
+         "Asked to concatenate a block that is already terminated!");
+  IRBuilder<> IRB(GB1.Last());
+  IRB.CreateBr(BB2);
+  return BB2;
+}
+
+BasicBlock *Parser::ConcatBlocks(GroupBlock GB1, GroupBlock GB2) {
+  assert(GB1.Last() &&
+         !GB1.Last()->getTerminator() &&
+         "Asked to concatenate a block that is already terminated!");
+  assert(GB2.First());
+  IRBuilder<> IRB(GB1.Last());
+  IRB.CreateBr(GB2.First());
+  return GB2.Last();
 }
